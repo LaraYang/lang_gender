@@ -1,0 +1,69 @@
+---
+
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+rm(list=ls())
+library(corrplot)
+library(dplyr)
+library(viridis)
+library(ggplot2)
+survey = read.csv("/Users/Lara/Dropbox/LanguageGender/Data/Advocates/Cleaned/responses_linguistic_measures.csv")
+devon = read.csv("/Users/Lara/Dropbox/LanguageGender/Data/Advocates/Cleaned/Rating_May 1_Devon.csv")
+```
+
+```{r}
+survey$treatment = as.factor(survey$treatment)
+survey = survey[survey$Gender != 'Other',]
+means = survey %>% group_by(Gender, treatment) %>% summarise(mean_mtld=mean(mtld), mean_ppl=mean(perplexity))
+survey$avg = rowMeans(survey[, c("mtld", "perplexity")])
+head(devon)
+survey = merge(survey, devon)
+m = corr.test(survey[, c('perplexity', 'mtld', 'hdd',  'creative', 'persuasive', 'description', 'text_length')], method='spearman')
+m
+cor.test(survey$perplexity, survey$creative)
+cor.test(survey$mtld, survey$creative)
+ggplot(means, aes(x=treatment, y = mean_mtld, fill = Gender)) + 
+    geom_bar(stat='identity', position='dodge') +
+    theme_bw() +
+    ggtitle('MTLD by Treatment and Gender')
+    scale_color_viridis()
+
+ggplot(means, aes(x=treatment, y = mean_ppl, fill = Gender)) + 
+    geom_bar(stat='identity', position='dodge') +
+    theme_bw() +
+    ggtitle('Perplexity by Treatment and Gender')
+    scale_color_viridis()
+
+survey$Gender = relevel(as.factor(survey$Gender), 'Male')
+survey$title = relevel(as.factor(survey$title), 'Individual contributor')
+survey$treated = 1
+survey$treated[survey$treatment == 'Control'] = 0
+survey$treated = as.factor(survey$treated)
+survey$gender_bin = 0
+survey[survey$Gender == 'Female', 'gender_bin'] = 1
+survey$text_length = scale(log(survey$text_length))
+survey$Age = scale(log(survey$Age))
+survey$mtld = scale(log(survey$mtld+1))
+
+survey[grepl(',', survey$Ethnicity), 'Ethnicity'] = "Multi-Ethnic" 
+survey[survey$Ethnicity == 'American Indian or Alaska Native', 'Ethnicity'] = "Other"
+survey$manager = 1
+survey$manager[survey$title == 'Individual contributor' | survey$title == 'Other'] = 0
+
+mod = lm(mtld ~ Gender + treatment + Age + Ethnicity + title, data=survey)
+summary(mod)
+mod = lm(mtld ~ Gender + treatment + Age + Ethnicity + manager, data=survey)
+summary(mod)
+
+cor(survey$mtld, survey$text_length)
+```
+
