@@ -1,0 +1,17 @@
+.ipynb_checkpoints
+*.pyc
+.DS_Store
+*.png
+*.Rhistory
+*.pdf
+*.html
+*.xlsx
+*.aux
+*.dvi
+*.bin
+*.tex
+*.log
+*.RData
+*.gz
+*.dic
+*.csv
